@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <title>MultiCanvas Tests</title>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/mocha/1.13.0/mocha.min.css">
     <link rel="stylesheet" href="bootstrap.min.css">
     
@@ -41,10 +42,11 @@
         </div>
         <div id="mocha" class="well"></div>
     </div>
-    <script type="text/javascript" src="../src/peer.js"></script>
+    <script src="http://sdk.altvr.com/libs/three.js/r71/build/three.min.js"></script>
+    <script src="http://sdk.altvr.com/libs/altspace.js/latest/altspace.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mocha/1.13.0/mocha.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/chai/1.9.0/chai.min.js"></script>
-    <script type="text/javascript" src="../src/multicanvas.js"></script>
+    <script type="text/javascript" src="../multicanvas.js"></script>
     <script type="text/javascript">
 
         mocha.setup("bdd");
@@ -92,6 +94,9 @@
             client = MultiCanvas(clientElement),
             clientCtx = clientElement.getContext("2d");
         
+        window.client = client;
+        window.host = host;
+
         hostElement.addEventListener("click", function(e) {
             var x = e.offsetX,
                 y = e.offsetY;
@@ -107,15 +112,12 @@
             });
 
             it("should have a host connect", function(callback) {
-                var peerHost = host.peer;
+                var sync = host.sync;
+                
                 host.host(1000/24).lossless = true;
 
-                peerHost.on("connection", function() { 
+                sync.once("value", function(data) { 
                     callback();
-                });
-
-                peerHost.on("open", function(id) {
-                    client.connect(id);
                 });
             });
 

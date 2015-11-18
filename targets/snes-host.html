@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="../../tests/bootstrap.min.css">
+    <link rel="stylesheet" href="../tests/bootstrap.min.css">
 
     <style type="text/css">
         body {
@@ -42,7 +42,7 @@
         </div>
         <div class="displays well">
             <canvas id="canvas" width="256" height="239"></canvas>
-            <canvas id="client" width="256" height="239"></canvas>
+
         </div>
         <input type="text" id="fps" size="5"/>
         <input type="file" onchange="snes_readfile(this)" />
@@ -52,22 +52,15 @@
 
         </textarea>
     </div>
-    <script type="text/javascript" src="../xnes9x.js"></script>
-    <script type="text/javascript" src="../../src/peer.js"></script>
-    <script type="text/javascript" src="../../src/multicanvas.js"></script>
+        <script src="http://sdk.altvr.com/libs/three.js/r71/build/three.min.js"></script>
+    <script src="http://sdk.altvr.com/libs/altspace.js/latest/altspace.min.js"></script>
+    <script type="text/javascript" src="lib/xnes9x.js"></script>
+    <script type="text/javascript" src="../multicanvas.js"></script>
     <script type="text/javascript">
         var hostElement = document.getElementById("canvas"),
-            clientElement = document.getElementById("client"),
-            host = MultiCanvas(hostElement),
-            hostCtx = hostElement.getContext("2d"),
-            client = MultiCanvas(clientElement),
-            clientCtx = clientElement.getContext("2d");
+            host = MultiCanvas(hostElement);
 
         host.host(1000 / 24);
-
-        host.peer.on("open", function(id) {
-            client.connect(id);
-        });
 
          // not responsible for the following :/
         // shim layer with setTimeout fallback

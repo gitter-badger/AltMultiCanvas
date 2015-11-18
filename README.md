@@ -1,15 +1,7 @@
-MultiCanvas
+# AltMultiCanvas
 ===========
-Syncs a canvas and keyboard input between multiple users using WebRTC.
+Syncs a canvas and keyboard input between multiple users using Firebase.
 
-Dependencies
-============
-Requires Peer.js for WebRTC connections.
+## Quick Start
 
-
-Demos
-=====
-
-- http://joshgalvin.github.io/MultiCanvas/tests/
-- http://joshgalvin.github.io/MultiCanvas/samples/snes/
-- http://joshgalvin.github.io/MultiCanvas/samples/snes-remote/
+Navigate to a host target, such as http://JoshGalvin.github.io/sadasdsad finish later

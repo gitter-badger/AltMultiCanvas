@@ -1,4 +1,5 @@
-// yeah polluting the namespace with chainable :/
+/* global altspace */
+
 var Chainable = (function() {
     "use strict";
     
@@ -84,47 +85,33 @@ var MultiCanvas = (function() {
         } ());
 
     return function(canvas) {
-        var peer = new Peer(Math.floor(Math.random() * 50), { key : "x87ju7n4u66layvi" }),
-            conns = {},
-            host = false,
+        var sync = altspace.utilities.sync.getInstance({
+                appId : "MultiCanvas",
+                authorId: "Galvus"
+            }),
+            userInfo = null,
+            syncData = {
+                host : -1,
+                canvas : "",
+                event : ""   
+            },
+            userPromise = null,
+            hostInt = null,
+            isHost = false,
             lossless = false,
             quality = 0.5,
             eventTarget,
-            chatTarget,
             ctx = canvas.getContext("2d"),
+            hostSetup = function(tickRate) {
+                sync.set({ host : userInfo.userId });
+                hostInt = setInterval(onTick, tickRate);   
+            },
             onTick = function() {
-                if(lossless) {
-                    send(canvas.toDataURL("image/png"));
-                } else {
-                    // WebP is kinda CPU intensive... disable for now
-                    if(util.browser === "Chrome") {
-                        send(canvas.toDataURL("image/webp", quality));   
-                    } else {
-                        send(canvas.toDataURL("image/jpeg", quality));
-                    }
-                    
-                }
-            },
-            onConnection = function(conn) {
-                conn.on("close", onClosed.bind(undefined, conn));
-                conn.on("data", onData);
-                conns[conn.peer] = conn;
-            },
-            onData = function(data) {
-                if(!host) {
-                    var img = new Image();
-                    img.src = data;
-                    img.onload = function() {
-                        ctx.drawImage(img, 0, 0);
-                    };
-                } else {
-                    if(eventTarget) {
-                        Simulate(eventTarget, data);
-                    }
-                }
-            },
-            onClosed = function(conn) {
-                delete conns[conn.peer];
+                var payload = lossless ? 
+                    canvas.toDataURL("image/png") :
+                    canvas.toDataURL("image/webp", quality);
+                
+                sync.update({ canvas : payload });
             },
             onEvent = function(e) {
                 // I could care about sending only defined data... or I couldn't.
@@ -132,44 +119,64 @@ var MultiCanvas = (function() {
                     e.preventDefault();
                 }
                 
-                send({
-                    type : e.type,
-                    keyCode : e.keyCode,
-                    charCode : e.charCode,
-                    screenX : e.screenX,
-                    screenY : e.screenY,
-                    clientX : e.clientX,
-                    clientY : e.clientY,
-                    button : e.button
-                });
-            },
-            send = function(data) {
-                Object.keys(conns).forEach(function(peer) {
-                    var conn = conns[peer];
-                    
-                    // kill buffer if it grows too large on host
-                    if(host && conn.bufferSize > 5) {
-                        conn._buffer = [];
-                        conn.bufferSize = 0;
-                        conn.buffered = false;
+                sync.update({ 
+                    event : {
+                        type     : e.type,
+                        keyCode  : e.keyCode,
+                        charCode : e.charCode,
+                        screenX  : e.screenX,
+                        screenY  : e.screenY,
+                        clientX  : e.clientX,
+                        clientY  : e.clientY,
+                        button   : e.button
                     }
-                    
-                    conn.send(data);
                 });
-            },
-            sendMessage = function(message) {
-                send(peer.id + "> " + message);
             };
+         
+        // grab user info ?
+        if(false && altspace.inClient) {    
+            userPromise = altspace.getUser().then(function(rUserInfo) {
+                userInfo = rUserInfo;
+            });
+        } else {
+            userInfo = {
+                userId : Math.random()
+            };
+        }
+        
+        sync.child("host").on("value", function(data) {
+            isHost = data.val() === (userInfo && userInfo.userId);
+            if(hostInt && !isHost) {
+                clearInterval(hostInt);
+            }
+        });
+        
+        sync.child("event").on("value", function(data) {
+            if(isHost) {
+                Simulate(eventTarget, data.val());
+            }
+        });
+        
+        sync.child("canvas").on("value", function(data) {
+            if(!isHost) {
+                var img = new Image();
+                img.src = data.val();
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                };
+            }
+        });
 
         return Chainable(canvas)
-            .property("peer", function(canvas) {
-                return peer;
-            })
             .lift("host", function(canvas, tickRate) {
-                host = true;
-                peer.on("connection", onConnection);
-                // start broadcasting data
-                setInterval(onTick, tickRate);
+                if(!userInfo) {
+                    userPromise.then(hostSetup.bind(null, tickRate));
+                } else {
+                    hostSetup(tickRate);
+                }
+            })
+            .property("sync", function(canvas) {
+                return sync;  
             })
             .property("lossless", function(canvas){
                 return lossless;
@@ -191,29 +198,18 @@ var MultiCanvas = (function() {
                 }
             })
             .lift("connect", function(canvas, id) {
-                onConnection(peer.connect(id));
+                // (auto connects)
             })
             .lift("events", function(canvas, target, events) {
                 target = target || canvas;
                 
-                if(!host) {
+                if(!syncData.host === userInfo.userId) {
                     events.forEach(function(event) {
                         target.addEventListener(event, onEvent);
                     });
                 } else {
                     eventTarget = target;
                 }
-            })
-            .lift("chat", function(canvas, outTarget, inTarget) {
-                chatTarget = outTarget;
-                
-                inTarget.addEventListener("keypress", function(e) {
-                    if(e.keyCode === 13) {
-                        e.preventDefault();
-                        sendMessage(inTarget.value);
-                        inTarget.value = "";
-                    }
-                });
             });
     };
 } ());
