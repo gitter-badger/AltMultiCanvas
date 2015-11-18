@@ -109,7 +109,7 @@ var MultiCanvas = (function() {
             onTick = function() {
                 var payload = lossless ? 
                     canvas.toDataURL("image/png") :
-                    canvas.toDataURL("image/webp", quality);
+                    canvas.toDataURL("image/jpeg", quality);
                 
                 sync.update({ canvas : payload });
             },
@@ -118,9 +118,9 @@ var MultiCanvas = (function() {
                 if(e.preventDefault) {
                     e.preventDefault();
                 }
-                
+
                 sync.update({ 
-                    event : {
+                    event : JSON.stringify({
                         type     : e.type,
                         keyCode  : e.keyCode,
                         charCode : e.charCode,
@@ -129,7 +129,7 @@ var MultiCanvas = (function() {
                         clientX  : e.clientX,
                         clientY  : e.clientY,
                         button   : e.button
-                    }
+                    })
                 });
             };
          
@@ -153,7 +153,7 @@ var MultiCanvas = (function() {
         
         sync.child("event").on("value", function(data) {
             if(isHost) {
-                Simulate(eventTarget, data.val());
+                Simulate(eventTarget, JSON.parse(data.val()));
             }
         });
         
@@ -203,7 +203,7 @@ var MultiCanvas = (function() {
             .lift("events", function(canvas, target, events) {
                 target = target || canvas;
                 
-                if(!syncData.host === userInfo.userId) {
+                if(!isHost) {
                     events.forEach(function(event) {
                         target.addEventListener(event, onEvent);
                     });

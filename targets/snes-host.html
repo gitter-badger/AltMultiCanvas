@@ -60,8 +60,12 @@
         var hostElement = document.getElementById("canvas"),
             host = MultiCanvas(hostElement);
 
-        host.host(1000 / 24);
-
+        host
+            .host(1000 / 24)
+            .events(document, ["keypress", "keydown", "keyup"]);
+            
+        host.lossless = true;
+        
          // not responsible for the following :/
         // shim layer with setTimeout fallback
         window.requestAnimFrame = (function(){
